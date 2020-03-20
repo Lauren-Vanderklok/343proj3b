@@ -69,24 +69,28 @@ class Projectile(pygame.sprite.Sprite):
 
     def update(self, game, enemies, ship):
         if self.rect.x < 1 or self.rect.x > 795:
-            self.vector[0] *= -1
+            #self.vector[0] *= -1
+            self.kill()
         if self.rect.y < 0:
-            self.vector[1] *= -1
-        if self.rect.y > ship.rect.y + 20:
-            game.projectiles.remove(self)
-            pygame.event.post(game.new_life_event)
+            #self.vector[1] *= -1
+            self.kill() #die die die
+        if self.rect.y > 600:
+            #game.projectiles.remove(self)
+            #pygame.event.post(game.new_life_event)
+            self.kill()
         hitObject = pygame.sprite.spritecollideany(self, enemies)
         if hitObject:
             self.thud_sound.play()
-            self.vector[0] *= -1.1
-            self.vector[1] *= -1.1
+            #self.vector[0] *= -1.1
+            #self.vector[1] *= -1.1
             hitObject.kill()
+            self.kill()
             game.score += 1
-        if pygame.sprite.collide_rect(self, ship):
-            self.vector[1] *= -1.2
-            self.vector[0] += random.random()
-            if random.randint(0,1) == 1:
-                self.vector[0] *= -1
+        #if pygame.sprite.collide_rect(self, ship):
+            #self.vector[1] *= -1.2
+            #self.vector[0] += random.random()
+            #if random.randint(0,1) == 1:
+             #   self.vector[0] *= -1
         self.rect.x += self.vector[0]
         self.rect.y += self.vector[1]
 
@@ -111,6 +115,7 @@ class Game:
         #self.ready = True
         self.score = 0
         self.lives = 5
+        self.spacePressed = False
         for i in range(0, 5):
             for j in range(0, 8):
                 enemy = Enemy()
@@ -140,11 +145,7 @@ class Game:
                         ball.vector = [ - random.randint(1, 10), -1 ]
                         #self.balls.add(ball)
                     if event.key == pygame.K_SPACE: #press space to fire
-                        self.projectile = Projectile()
-                        self.projectiles.add(self.projectile)
-                        self.projectile.rect.x = self.ship.rect.x + 12
-                        self.projectile.vector = [ 0, -1 ]
-                        #self.spacePressed = True
+                        self.spacePressed = True
                     if event.key == pygame.K_LEFT:
                         self.ship.rect.x -= 5
                         if self.ship.rect.x <= 0:
@@ -153,6 +154,13 @@ class Game:
                         self.ship.rect.x += 5
                         if self.ship.rect.x >= 750:
                             self.ship.rect.x = 750
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_SPACE and self.spacePressed == True:
+                        self.spacePressed = False
+                        self.projectile = Projectile()
+                        self.projectiles.add(self.projectile)
+                        self.projectile.rect.x = self.ship.rect.x + 12
+                        self.projectile.vector = [0, -1]
                 #if self.ready:
                  #   self.projectiles.sprites()[0].rect.x = self.ship.rect.x + 25
             
