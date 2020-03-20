@@ -27,7 +27,7 @@ class Overlay(pygame.sprite.Sprite):
         self.render('Score: ' + str(score) + '        Lives: ' + str(lives))
 
 
-class Paddle(pygame.sprite.Sprite):
+class Ship(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((25, 25))
@@ -40,7 +40,7 @@ class Paddle(pygame.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
 
-class Block(pygame.sprite.Sprite):
+class Enemy(pygame.sprite.Sprite):
     right = True
     pos = 200 #distance between first col of blocks and left edge, 200 is middle
 
@@ -53,19 +53,10 @@ class Block(pygame.sprite.Sprite):
         self.basePos = 0
 
     def update(self):
-        if Block.right:
-            Block.pos += 0.1
-            self.rect.x = self.basePos + Block.pos
-            if Block.pos > 400:
-                Block.right = False
-        else:
-            Block.pos -= 0.1
-            self.rect.x = self.basePos + Block.pos
-            if Block.pos < 0:
-                Block.right = True
+        self.rect.x = self.basePos + Enemy.pos
 
 
-class Ball(pygame.sprite.Sprite):
+class Projectile(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((10, 10))
@@ -76,22 +67,22 @@ class Ball(pygame.sprite.Sprite):
         self.vector = [ 0, 0 ]
         self.thud_sound = pygame.mixer.Sound('assets/thud.wav')
 
-    def update(self, game, blocks, paddle):
+    def update(self, game, enemies, ship):
         if self.rect.x < 1 or self.rect.x > 795:
             self.vector[0] *= -1
         if self.rect.y < 0:
             self.vector[1] *= -1
-        if self.rect.y > paddle.rect.y + 20:
-            game.balls.remove(self)
+        if self.rect.y > ship.rect.y + 20:
+            game.projectiles.remove(self)
             pygame.event.post(game.new_life_event)
-        hitObject = pygame.sprite.spritecollideany(self, blocks)
+        hitObject = pygame.sprite.spritecollideany(self, enemies)
         if hitObject:
             self.thud_sound.play()
             self.vector[0] *= -1.1
             self.vector[1] *= -1.1
             hitObject.kill()
             game.score += 1
-        if pygame.sprite.collide_rect(self, paddle):
+        if pygame.sprite.collide_rect(self, ship):
             self.vector[1] *= -1.2
             self.vector[0] += random.random()
             if random.randint(0,1) == 1:
@@ -109,67 +100,78 @@ class Game:
         pygame.mixer.music.set_volume(0.4)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((800, 600)) #controls size of screen x, y pix
-        self.balls = pygame.sprite.Group()
-        self.balls.add(Ball())
-        self.paddle = Paddle()
+        self.projectiles = pygame.sprite.Group()
+        #self.balls.add(Projectile())
+        self.projectile = None
+        self.ship = Ship()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
-        self.blocks = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
         self.overlay = Overlay()
         self.screen.fill((0, 0, 0)) #controls color of background updated in run
-        self.ready = True 
+        #self.ready = True
         self.score = 0
         self.lives = 5
         for i in range(0, 5):
             for j in range(0, 8):
-                block = Block()
-                block.basePos = j * 50
-                block.rect.y = i * 50
-                self.blocks.add(block)
+                enemy = Enemy()
+                enemy.basePos = j * 50
+                enemy.rect.y = i * 50
+                self.enemies.add(enemy)
 
 
     def run(self):
         self.done = False
+        #self.spacePressed = False
         while not self.done:
+            #self.spacePressed = False
             self.screen.fill((0, 0, 0))
             for event in pygame.event.get():
                 if event.type == self.new_life_event.type:
                     self.lives -= 1
-                    if self.lives > 0:
-                        ball = Ball()
-                        ball.rect.x = self.paddle.rect.x + 25
-                        self.balls.add(ball)
-                        self.ready = True
-                    else:
+                    if self.lives < 0:
                         pygame.quit()
                         sys.exit(0)
                 if event.type == pygame.QUIT:
                     self.done = True
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_a:
+                    if event.key == pygame.K_a: #press a for SICKO MODE
                         self.lives += 1
-                        ball = Ball()
+                        ball = Projectile()
                         ball.vector = [ - random.randint(1, 10), -1 ]
-                        self.balls.add(ball)
-                    if event.key == pygame.K_SPACE and self.ready:
-                        self.balls.sprites()[0].vector = [ -1, -1 ]
-                        self.ready = False
+                        #self.balls.add(ball)
+                    if event.key == pygame.K_SPACE: #press space to fire
+                        self.projectile = Projectile()
+                        self.projectiles.add(self.projectile)
+                        self.projectile.rect.x = self.ship.rect.x + 12
+                        self.projectile.vector = [ 0, -1 ]
+                        #self.spacePressed = True
                     if event.key == pygame.K_LEFT:
-                        self.paddle.rect.x -= 5
-                        if self.paddle.rect.x <= 0:
-                            self.paddle.rect.x = 0
+                        self.ship.rect.x -= 5
+                        if self.ship.rect.x <= 0:
+                            self.ship.rect.x = 0
                     if event.key == pygame.K_RIGHT:
-                        self.paddle.rect.x += 5
-                        if self.paddle.rect.x >= 750:
-                            self.paddle.rect.x = 750
-                if self.ready:
-                    self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
+                        self.ship.rect.x += 5
+                        if self.ship.rect.x >= 750:
+                            self.ship.rect.x = 750
+                #if self.ready:
+                 #   self.projectiles.sprites()[0].rect.x = self.ship.rect.x + 25
             
-            self.balls.update(self, self.blocks, self.paddle)
+            self.projectiles.update(self, self.enemies, self.ship)
             self.overlay.update(self.score, self.lives)
-            self.blocks.update()
-            self.balls.draw(self.screen)
-            self.paddle.draw(self.screen)
-            self.blocks.draw(self.screen)
+            if Enemy.right:
+                Enemy.pos += 5
+                #self.rect.x = self.basePos + Enemy.pos
+                if Enemy.pos > 400:
+                    Enemy.right = False
+            else:
+                Enemy.pos -= 5
+                #self.rect.x = self.basePos + Enemy.pos
+                if Enemy.pos < 0:
+                    Enemy.right = True
+            self.enemies.update()
+            self.projectiles.draw(self.screen)
+            self.ship.draw(self.screen)
+            self.enemies.draw(self.screen)
             self.overlay.draw(self.screen)
             pygame.display.flip()
             self.clock.tick(60)
