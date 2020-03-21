@@ -7,11 +7,8 @@ import sys
 
 class Overlay(pygame.sprite.Sprite):
     def __init__(self):
-        # Equivalent statements:
-        #pygame.sprite.Sprite.__init__(self)
         super(pygame.sprite.Sprite, self).__init__()
         self.image = pygame.Surface((800, 20))
-        #self.image.fill((0, 0, 0))
         self.rect = self.image.get_rect()
         self.font = pygame.font.Font('freesansbold.ttf', 18)
         self.render('Score: 0        Lives: 5')
@@ -98,11 +95,10 @@ class Projectile(pygame.sprite.Sprite):
         if self.rect.x < 1 or self.rect.x > 795:
             self.kill()
         if self.rect.y < 0:
-            self.kill() #die die die
+            self.kill()
         if self.rect.y > 600:
             self.kill()
-        if (type(firer) == Ship):
-            #print("ship projectiles are updating")
+        if type(firer) == Ship:
             hitObject = pygame.sprite.spritecollideany(self, targets)
             if hitObject:
                 self.thud_sound.play()
@@ -110,15 +106,13 @@ class Projectile(pygame.sprite.Sprite):
                 self.kill()
                 game.score += 1
         else:
-            #print("enemy projectiles are updating")
             if pygame.sprite.collide_rect(self, targets):
                 self.thud_sound.play()
                 pygame.event.post(game.new_life_event)
                 self.kill()
-
-
         self.rect.x += self.vector[0]
         self.rect.y += self.vector[1]
+
 
 class ThreeShotPowerUp(pygame.sprite.Sprite):
     def __init__(self):
@@ -135,15 +129,13 @@ class ThreeShotPowerUp(pygame.sprite.Sprite):
         if self.rect.x < 1 or self.rect.x > 795:
             self.kill()
         if self.rect.y < 0:
-            self.kill() #die die die
+            self.kill()
         if self.rect.y > 600:
             self.kill()
         if pygame.sprite.collide_rect(self, game.ship):
             self.sound.play()
             pygame.event.post(game.threeShotPowerUp)
             self.kill()
-            #timer
-
         self.rect.x += self.vector[0]
         self.rect.y += self.vector[1]
 
@@ -157,12 +149,9 @@ class Game:
         pygame.mixer.music.set_volume(0.6)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((800, 600)) #controls size of screen x, y pix
-        # self.screen = pygame.display.set_caption("Galaxian")
         self.shipProjectiles = pygame.sprite.Group()
         self.enemyProjectiles = pygame.sprite.Group()
         self.powerups = pygame.sprite.Group()
-        #self.balls.add(Projectile())
-        # self.projectile = None
         self.ship = Ship()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
         self.win = pygame.event.Event(pygame.USEREVENT + 2)
@@ -170,7 +159,6 @@ class Game:
         self.enemies = pygame.sprite.Group()
         self.overlay = Overlay()
         self.screen.fill((0, 0, 0)) #controls color of background updated in run
-        #self.ready = True
         self.score = 0
         self.lives = 5
         self.spacePressed = False
@@ -182,12 +170,9 @@ class Game:
                 enemy.rect.y = i * 50
                 self.enemies.add(enemy)
 
-
     def run(self):
         self.done = False
-        #self.spacePressed = False
         while not self.done:
-            #self.spacePressed = False
             self.screen.fill((0, 0, 0))
             for event in pygame.event.get():
                 if event.type == self.new_life_event.type:
@@ -225,25 +210,23 @@ class Game:
                     pygame.quit()
                     sys.exit(0)
 
-
             if len(self.enemies.sprites()) == 0:
                 pygame.event.post(self.win)
             if random.randint(0, 9) == 2:
                 self.enemies.sprites()[random.randint(0, len(self.enemies.sprites())-1)].fire()
             if random.randint(0, 50) == 2:
                 self.enemies.sprites()[random.randint(0, len(self.enemies.sprites())-1)].firePowerUp()
+
             self.shipProjectiles.update(self.enemies, self.ship)
             self.enemyProjectiles.update(self.ship, self.enemies)
             self.powerups.update()
             self.overlay.update(self.score, self.lives)
             if Enemy.right:
                 Enemy.pos += 5
-                #self.rect.x = self.basePos + Enemy.pos
                 if Enemy.pos > 400:
                     Enemy.right = False
             else:
                 Enemy.pos -= 5
-                #self.rect.x = self.basePos + Enemy.pos
                 if Enemy.pos < 0:
                     Enemy.right = True
             self.enemies.update()
@@ -256,19 +239,6 @@ class Game:
             self.overlay.draw(self.screen)
             pygame.display.flip()
             self.clock.tick(60)
-
-
-class Intro(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((800, 120))
-        self.font = pygame.font.Font('freesansbold.ttf', 96)
-        self.text = self.font.render('Breakout!', True, (0, 0, 0))
-        self.rect = self.image.get_rect()
-        self.image.blit(self.text, self.rect)
-
-    def draw(self, screen):
-        screen.blit(self.text, (0, 0))
 
 
 if __name__ == "__main__":
