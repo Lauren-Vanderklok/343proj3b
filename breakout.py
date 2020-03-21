@@ -116,6 +116,7 @@ class Game:
         self.projectile = None
         self.ship = Ship()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
+        self.win = pygame.event.Event(pygame.USEREVENT + 2)
         self.enemies = pygame.sprite.Group()
         self.overlay = Overlay()
         self.screen.fill((0, 0, 0)) #controls color of background updated in run
@@ -170,6 +171,11 @@ class Game:
                         self.projectile.vector = [0, -8]
                 #if self.ready:
                  #   self.projectiles.sprites()[0].rect.x = self.ship.rect.x + 25
+                if event.type == self.win.type:
+                    pygame.quit()
+                    sys.exit(0)
+            if len(self.enemies.sprites()) == 0:
+                pygame.event.post(self.win)
             if random.randint(0, 9) == 2:
                 self.enemies.sprites()[random.randint(0, len(self.enemies.sprites())-1)].fire()
 
@@ -188,9 +194,9 @@ class Game:
                     Enemy.right = True
             self.enemies.update()
             self.shipProjectiles.draw(self.screen)
-            self.enemyProjectiles.draw(self.screen)
             self.ship.draw(self.screen)
             self.enemies.draw(self.screen)
+            self.enemyProjectiles.draw(self.screen)
             self.overlay.draw(self.screen)
             pygame.display.flip()
             self.clock.tick(60)
