@@ -35,9 +35,19 @@ class Ship(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 375
         self.rect.y = 570
+        self.shootingSound = pygame.mixer.Sound('assets/shooting.wav')
+        self.projectile = None
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
+
+    def fire(self):
+        self.shootingSound.play()
+        self.projectile = Projectile()
+        game.shipProjectiles.add(self.projectile)
+        self.projectile.rect.x = self.rect.x + 12
+        self.projectile.vector = [0, -8]
+
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -107,13 +117,13 @@ class Game:
         pygame.key.set_repeat(50)
         pygame.mixer.music.load('assets/TheOnlySongThatMatters.wav')
         pygame.mixer.music.play(-1)
-        pygame.mixer.music.set_volume(0.4)
+        pygame.mixer.music.set_volume(0.6)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((800, 600)) #controls size of screen x, y pix
         self.shipProjectiles = pygame.sprite.Group()
         self.enemyProjectiles = pygame.sprite.Group();
         #self.balls.add(Projectile())
-        self.projectile = None
+        # self.projectile = None
         self.ship = Ship()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
         self.win = pygame.event.Event(pygame.USEREVENT + 2)
@@ -147,11 +157,6 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.done = True
                 if event.type == pygame.KEYDOWN:
-                    #if event.key == pygame.K_a: #press a for SICKO MODE
-                     #   self.lives += 1
-                     #   ball = Projectile()
-                     #   ball.vector = [ - random.randint(1, 10), -1 ]
-                        #self.balls.add(ball)
                     if event.key == pygame.K_SPACE: #press space to fire
                         self.spacePressed = True
                     if event.key == pygame.K_LEFT:
@@ -165,15 +170,11 @@ class Game:
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_SPACE and self.spacePressed == True:
                         self.spacePressed = False
-                        self.projectile = Projectile()
-                        self.shipProjectiles.add(self.projectile)
-                        self.projectile.rect.x = self.ship.rect.x + 12
-                        self.projectile.vector = [0, -8]
-                #if self.ready:
-                 #   self.projectiles.sprites()[0].rect.x = self.ship.rect.x + 25
+                        self.ship.fire()
                 if event.type == self.win.type:
                     pygame.quit()
                     sys.exit(0)
+
             if len(self.enemies.sprites()) == 0:
                 pygame.event.post(self.win)
             if random.randint(0, 9) == 2:
