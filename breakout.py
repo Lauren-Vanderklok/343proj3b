@@ -51,10 +51,17 @@ class Enemy(pygame.sprite.Sprite):
         self.image.fill(self.color)
         self.rect = self.image.get_rect()
         self.basePos = 0
+        self.projectile = None
 
     def update(self):
         self.rect.x = self.basePos + Enemy.pos
 
+    def fire(self):
+        self.projectile = Projectile()
+        game.enemyProjectiles.add(self.projectile)
+        self.projectile.rect.x = self.rect.x + 25
+        self.projectile.rect.y = self.rect.y - 25
+        self.projectile.vector = [0, 8]
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self):
@@ -64,33 +71,32 @@ class Projectile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 400
         self.rect.y = 560
-        self.vector = [ 0, 0 ]
+        self.vector = [0, 0]
         self.thud_sound = pygame.mixer.Sound('assets/thud.wav')
 
-    def update(self, game, enemies, ship):
+    def update(self, targets, firer):
         if self.rect.x < 1 or self.rect.x > 795:
-            #self.vector[0] *= -1
             self.kill()
         if self.rect.y < 0:
-            #self.vector[1] *= -1
             self.kill() #die die die
         if self.rect.y > 600:
-            #game.projectiles.remove(self)
-            #pygame.event.post(game.new_life_event)
             self.kill()
-        hitObject = pygame.sprite.spritecollideany(self, enemies)
-        if hitObject:
-            self.thud_sound.play()
-            #self.vector[0] *= -1.1
-            #self.vector[1] *= -1.1
-            hitObject.kill()
-            self.kill()
-            game.score += 1
-        #if pygame.sprite.collide_rect(self, ship):
-            #self.vector[1] *= -1.2
-            #self.vector[0] += random.random()
-            #if random.randint(0,1) == 1:
-             #   self.vector[0] *= -1
+        if (type(firer) == Ship):
+            #print("ship projectiles are updating")
+            hitObject = pygame.sprite.spritecollideany(self, targets)
+            if hitObject:
+                self.thud_sound.play()
+                hitObject.kill()
+                self.kill()
+                game.score += 1
+        else:
+            #print("enemy projectiles are updating")
+            if pygame.sprite.collide_rect(self, targets):
+                self.thud_sound.play()
+                pygame.event.post(game.new_life_event)
+                self.kill()
+
+
         self.rect.x += self.vector[0]
         self.rect.y += self.vector[1]
 
@@ -104,7 +110,8 @@ class Game:
         pygame.mixer.music.set_volume(0.4)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((800, 600)) #controls size of screen x, y pix
-        self.projectiles = pygame.sprite.Group()
+        self.shipProjectiles = pygame.sprite.Group()
+        self.enemyProjectiles = pygame.sprite.Group();
         #self.balls.add(Projectile())
         self.projectile = None
         self.ship = Ship()
@@ -139,32 +146,35 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.done = True
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_a: #press a for SICKO MODE
-                        self.lives += 1
-                        ball = Projectile()
-                        ball.vector = [ - random.randint(1, 10), -1 ]
+                    #if event.key == pygame.K_a: #press a for SICKO MODE
+                     #   self.lives += 1
+                     #   ball = Projectile()
+                     #   ball.vector = [ - random.randint(1, 10), -1 ]
                         #self.balls.add(ball)
                     if event.key == pygame.K_SPACE: #press space to fire
                         self.spacePressed = True
                     if event.key == pygame.K_LEFT:
-                        self.ship.rect.x -= 5
+                        self.ship.rect.x -= 10
                         if self.ship.rect.x <= 0:
                             self.ship.rect.x = 0
                     if event.key == pygame.K_RIGHT:
-                        self.ship.rect.x += 5
+                        self.ship.rect.x += 10
                         if self.ship.rect.x >= 750:
                             self.ship.rect.x = 750
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_SPACE and self.spacePressed == True:
                         self.spacePressed = False
                         self.projectile = Projectile()
-                        self.projectiles.add(self.projectile)
+                        self.shipProjectiles.add(self.projectile)
                         self.projectile.rect.x = self.ship.rect.x + 12
-                        self.projectile.vector = [0, -1]
+                        self.projectile.vector = [0, -8]
                 #if self.ready:
                  #   self.projectiles.sprites()[0].rect.x = self.ship.rect.x + 25
-            
-            self.projectiles.update(self, self.enemies, self.ship)
+            if random.randint(0, 9) == 2:
+                self.enemies.sprites()[random.randint(0, len(self.enemies.sprites())-1)].fire()
+
+            self.shipProjectiles.update(self.enemies, self.ship)
+            self.enemyProjectiles.update(self.ship, self.enemies)
             self.overlay.update(self.score, self.lives)
             if Enemy.right:
                 Enemy.pos += 5
@@ -177,7 +187,8 @@ class Game:
                 if Enemy.pos < 0:
                     Enemy.right = True
             self.enemies.update()
-            self.projectiles.draw(self.screen)
+            self.shipProjectiles.draw(self.screen)
+            self.enemyProjectiles.draw(self.screen)
             self.ship.draw(self.screen)
             self.enemies.draw(self.screen)
             self.overlay.draw(self.screen)
